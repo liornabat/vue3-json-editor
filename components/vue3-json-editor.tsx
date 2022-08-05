@@ -5,26 +5,7 @@ import './style.css'
 
 export const Vue3JsonEditor = defineComponent({
   props: {
-    modelValue: [String, Boolean, Object, Array],
-    showBtns: [Boolean],
-    expandedOnStart: {
-      type: Boolean,
-      default: false
-    },
-    mode: {
-      type: String,
-      default: 'tree'
-    },
-    modes: {
-      type: Array,
-      default: function () {
-        return ['tree', 'code', 'form', 'text', 'view']
-      }
-    },
-    lang: {
-      type: String,
-      default: 'en'
-    }
+    modelValue: [String, Boolean, Object, Array]
   },
   setup (props: any, { emit }) {
     const root = getCurrentInstance()?.root.proxy as ComponentPublicInstance
@@ -34,18 +15,6 @@ export const Vue3JsonEditor = defineComponent({
       error: false,
       json: {},
       internalChange: false,
-      expandedModes: ['tree', 'view', 'form'],
-      locale: {
-        it: {
-          save: 'SALVA'
-        },
-        en: {
-          save: 'SAVE'
-        },
-        zh: {
-          save: '保存'
-        }
-      },
       uid: `jsoneditor-vue-${getCurrentInstance()?.uid}`
     })
 
@@ -56,22 +25,20 @@ export const Vue3JsonEditor = defineComponent({
           state.json = val
           await setEditor(val)
           state.error = false
-          expandAll()
         }
       }, { immediate: true })
 
     onMounted(() => {
       const options = {
-        mode: props.mode,
-        modes: props.modes,
+        mode: 'code',
+        mainMenuBar: false,
         onChange () {
           try {
             const json = state.editor.get()
             state.json = json
             state.error = false
-            emit('json-change', json)
             state.internalChange = true
-            emit('input', json)
+            emit('update:modelValue', json)
             root.$nextTick(function () {
               state.internalChange = false
             })
@@ -79,9 +46,6 @@ export const Vue3JsonEditor = defineComponent({
             state.error = true
             emit('has-error', e)
           }
-        },
-        onModeChange () {
-          expandAll()
         }
       }
       state.editor = new JsonEditor(
@@ -92,17 +56,6 @@ export const Vue3JsonEditor = defineComponent({
 
       emit('provide-editor', state.editor)
     })
-
-    function expandAll () {
-      if (props.expandedOnStart && state.expandedModes.includes(props.mode)) {
-        (state.editor as any).expandAll()
-      }
-    }
-
-    function onSave () {
-      emit('json-save', state.json)
-    }
-
     function setEditor (value: any): void {
       if (state.editor) state.editor.set(value)
     }
@@ -111,18 +64,6 @@ export const Vue3JsonEditor = defineComponent({
       return (
         <div>
           <div id={state.uid} class={'jsoneditor-vue'}></div>
-          {props.showBtns !== false && (
-            <div class={'jsoneditor-btns'}>
-              <button
-                class={'json-save-btn'}
-                type={'button'}
-                onClick={() => {
-                  onSave()
-                }}
-                disabled={state.error}
-              >{state.locale[props.lang].save}</button>
-            </div>
-          )}
         </div>
       )
     }
